@@ -1,0 +1,15 @@
+# ambientes virtuais
+venv/
+.venv/
+env/
+ENV/
+
+# artefatos gerados (reproduzidos pelos comandos do README; dados/ é versionado)
+data/
+models/
+
+# caches
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
