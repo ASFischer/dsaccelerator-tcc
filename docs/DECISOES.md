@@ -27,6 +27,24 @@ Registro das decisões do projeto, em ordem de etapa. Cada item diz o que foi de
 - **Risco residual:** supõe-se que a posição relativa do contrato carrega o mesmo risco hoje e no passado; os critérios 2 e 3 detectam sintomas dessa falha, mas não a provam.
 - **Exceção ao plano:** o percentil é uma feature derivada (o plano dizia "sem features derivadas"); só entra no modelo final se o B for adotado.
 
+## Etapa 2 — Target e features (nb02, `src/features.py`)
+
+| # | Decisão | Evidência | Validada |
+|---|---|---|---|
+| 2.1 | Target = alguma das **6 primeiras parcelas** com DPD > 5 dias (principal) e > 30 (comparação); só contratos aprovados e **maduros** (6ª parcela venceu há mais de X dias) | Regra do plano; 98.861 contratos maduros, 22,5% de inadimplência (DPD > 5) e 9,4% (DPD > 30); todo DPD > 30 é também DPD > 5 | Sim (plano) |
+| 2.2 | DPD da parcela quitada = data de conclusão − vencimento; não quitada = observação (22/02/2025) − vencimento; quitada se pago ≥ previsto − R$ 0,01 | Consolidação do item 1.7; 99,75% das parcelas quitadas | Sim (plano) |
+| 2.3 | Janela fixa de 6 parcelas (*performance window*) | Maturidade, exposição comparável, proximidade da decisão e ambiguidade das parcelas ausentes | Sim (plano) |
+| 2.4 | Percentil dos valores (modelo B) calculado **só entre os aprovados do mesmo mês**, antes de filtrar os maduros | Item 1.10 | Sim |
+| 2.5 | Idade = anos entre `data_nascimento` e a **data da decisão** (treino) ou da solicitação (submissão; nula → data de observação) | Evita usar informação posterior ao pedido | Sim |
+| 2.6 | Separação fora do tempo pela data de decisão: **treino até 31/12/2022 (62.580), validação 2023 (22.255), teste 2024 em diante (14.026)** | Mantém validação e teste parecidos (taxa 17,6% e 17,5%) e treino longo | Sim |
+| 2.7 | Sem `scale_pos_weight` para DPD > 5 (≥ 20%); comparar pesos no nb03 para DPD > 30 | Regra de decisão do plano: 25,3% no treino | Sim (plano) |
+| 2.8 | **Seleção de variáveis:** LightGBM e XGBoost usam todas as candidatas; só o baseline logístico usa o conjunto reduzido (remove as 9 variáveis com IV < 0,02, mantendo `sexo` por decisão do usuário) | 10 variáveis com IV < 0,02 (`renda_anual`, `tipo_moradia`, `nivel_educacao`, `estado_civil`, `sexo`, `dia_semana_solicitacao`, `possui_imovel`, `hora`, `tipo_contrato`, `possui_carro`); PSI > 0,25 só nos valores brutos (modelo C, só referência); nenhum VIF > 10 | Sim |
+
+### Limitações do target
+- **Maturidade e seleção:** 24 mil aprovados (≈ 20% dos que têm parcelas) ficam sem target: 20.450 com 6 ou mais parcelas planejadas mas menos de 6 vencidas (parcelas ausentes: quitação antecipada ou inadimplência?) e 3.528 com menos de 6 parcelas planejadas. A mistura de `tipo_contrato` não muda (38% / 37% / 25%), mas o efeito sobre o risco é desconhecido.
+- **Deriva do target:** taxa de 25,3% no treino contra 17,5% no teste; probabilidades precisam de calibração na validação.
+- **Safras recentes:** só entram contratos cuja 6ª parcela já venceu, o que pode enviesar 2024 e 2025.
+
 ## Limitações conhecidas
 - Viés de seleção: só contratos aprovados têm desfecho. Reject inference fora do escopo.
 - Das 131.735 contratações aprovadas, 8.868 não têm parcelas (primeira parcela ainda não venceu); concentram-se em 2024 (12%) e 2025 (74%).

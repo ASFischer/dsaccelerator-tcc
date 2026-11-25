@@ -15,3 +15,8 @@ TOL_QUITACAO = 0.01            # centavos: pago >= previsto - tol => quitada
 RECALL_ALVO = 0.80             # política: recall mínimo da zona "não aprovar direto"
 LGD_CENARIOS = (0.45, 0.60, 0.75)
 DATA_OBSERVACAO = "2025-02-22"  # máx. data_real_pagamento e vencimento em historico_parcelas (nb01)
+
+# separação fora do tempo, pela data de decisão do contrato (proposta a validar no nb02)
+DATA_CORTE_TREINO = "2022-12-31"   # treino: decisões até esta data
+DATA_CORTE_VALID = "2023-12-31"    # validação: até esta data; teste: depois
+GERADOS = RAIZ / "data"            # bases geradas (ignorado pelo git; reproduz-se pelo nb02)
