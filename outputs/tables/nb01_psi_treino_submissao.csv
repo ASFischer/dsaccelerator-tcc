@@ -1,0 +1,22 @@
+,grupo,PSI,leitura
+valor_bem,contrato,2.46,mudança relevante
+valor_credito,contrato,1.9647,mudança relevante
+valor_parcela,contrato,0.9538,mudança relevante
+dia_semana_solicitacao,contrato,0.0485,estável
+hora,contrato,0.0225,estável
+idade,cadastro,0.0055,estável
+nivel_educacao,cadastro,0.0038,estável
+tipo_organizacao,cadastro,0.0037,estável
+ocupacao,cadastro,0.003,estável
+renda_anual,cadastro,0.0029,estável
+estado_civil,cadastro,0.0026,estável
+nota_regiao_cliente_cidade,cadastro,0.0022,estável
+tipo_contrato,contrato,0.0019,estável
+possui_imovel,cadastro,0.0019,estável
+tipo_renda,cadastro,0.0018,estável
+qtd_membros_familia,cadastro,0.0016,estável
+nota_regiao_cliente,cadastro,0.0015,estável
+tipo_moradia,cadastro,0.0011,estável
+sexo,cadastro,0.0011,estável
+qtd_filhos,cadastro,0.001,estável
+possui_carro,cadastro,0.0,estável
