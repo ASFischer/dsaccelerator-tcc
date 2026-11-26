@@ -57,7 +57,7 @@ def test_calibrador_monotono_e_wilson():
     p = rng.uniform(0, 1, 5000)
     y = (rng.uniform(0, 1, 5000) < p ** 2).astype(int)
     for metodo in ("platt", "isotonica"):
-        q = po.calibrador(metodo, p, y)(np.sort(p))
+        q = po.Calibrador(metodo, p, y)(np.sort(p))
         assert np.all(np.diff(q) >= 0) and q.min() >= 0 and q.max() <= 1
     lo, hi = po.wilson(10, 100)
     assert lo < 0.1 < hi and 0 < lo and hi < 1

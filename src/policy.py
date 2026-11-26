@@ -35,9 +35,6 @@ class Calibrador:
         return np.clip(self.m.predict(q) + 1e-6 * q, 0, 1)
 
 
-calibrador = Calibrador
-
-
 def ece(y, p, bins: int = 10) -> float:
     """Erro de calibração esperado com faixas de mesmo volume."""
     d = pd.DataFrame({"y": np.asarray(y), "p": np.asarray(p)})

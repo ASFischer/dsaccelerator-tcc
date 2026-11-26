@@ -2,13 +2,13 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.metrics import roc_auc_score
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import evaluate as ev
 import features as ft
-import pandas as pd
 
 
 def test_limiar_e_metricas_contra_contagem_manual():

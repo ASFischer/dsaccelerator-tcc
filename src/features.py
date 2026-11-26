@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 
-from config import DPD_ALTERNATIVO, DPD_PRINCIPAL, N_PARCELAS_JANELA, TOL_QUITACAO
+from config import DATA_CORTE_TREINO, DATA_CORTE_VALID, DPD_ALTERNATIVO, DPD_PRINCIPAL, N_PARCELAS_JANELA, TOL_QUITACAO
 
 K = ["id_contrato", "numero_parcela"]
 
@@ -97,7 +97,6 @@ def base_submissao(sub: pd.DataFrame, cad: pd.DataFrame, obs: pd.Timestamp) -> p
 
 def separar_oot(data_decisao: pd.Series) -> pd.Series:
     """Rótulo 'treino' / 'valid' / 'teste' pela data de decisão (cortes no config)."""
-    from config import DATA_CORTE_TREINO, DATA_CORTE_VALID
     assert data_decisao.notna().all(), "data_decisao nula: o contrato cairia no teste sem aviso"
     return pd.Series(np.select([data_decisao <= DATA_CORTE_TREINO, data_decisao <= DATA_CORTE_VALID],
                                ["treino", "valid"], "teste"), index=data_decisao.index)

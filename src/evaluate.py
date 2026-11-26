@@ -50,7 +50,10 @@ def metricas(y, p, limiar: float) -> dict:
     pred = p >= limiar
     tp, fp, fn = (pred & (y == 1)).sum(), (pred & (y == 0)).sum(), ((~pred) & (y == 1)).sum()
     prec, rec = tp / max(tp + fp, 1), tp / max(tp + fn, 1)
-    f = lambda b: (1 + b * b) * prec * rec / max(b * b * prec + rec, 1e-12)
+
+    def f(b):
+        return (1 + b * b) * prec * rec / max(b * b * prec + rec, 1e-12)
+
     auc = roc_auc_score(y, p)
     fpr, tpr, _ = roc_curve(y, p)
     return dict(recall=rec, precision=prec, f1=f(1), f2=f(2), auc=auc, gini=2 * auc - 1, ks=float((tpr - fpr).max()),

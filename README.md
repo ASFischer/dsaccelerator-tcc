@@ -1,6 +1,6 @@
 # Modelo de inadimplência e política de crédito
 
-Case WeCogno / DS Accelerator: estimar a probabilidade de inadimplência de cada contrato de crédito para pessoa física, definir uma política de crédito (aprovar, aprovar com ajuste, rejeitar) e pontuar a base de submissão.
+Case WeCogno / DS Accelerator (enunciado em `README - Modelo de inadimplência.pdf`): estimar a probabilidade de inadimplência de cada contrato de crédito para pessoa física, definir uma política de crédito (aprovar, aprovar com ajuste, rejeitar) e pontuar a base de submissão.
 
 ## Entregas
 | Entrega | Onde |
@@ -9,7 +9,7 @@ Case WeCogno / DS Accelerator: estimar a probabilidade de inadimplência de cada
 | Política de crédito | p₁ = 0,118 e p₂ = 0,250 (`notebooks/04`, `src/policy.py`) |
 | Modelo final | `models/modelo_final.joblib` (modelo, calibrador, cortes p₁/p₂, variáveis e categorias) |
 | Previsões da submissão | `submissao/previsoes.csv` (`id_cliente`, `probabilidade`, `decisao`, `faixa_gestao`; 1 linha por cliente) |
-| Decisões e alternativas | `docs/DECISOES.md` |
+| Decisões e alternativas | `docs/DECISOES.md` (o `docs/PLANO.md` é o plano original; onde divergem, vale o `DECISOES.md`) |
 | Medidas estatísticas explicadas | `docs/METRICAS.md` |
 
 ## Problema e dados
@@ -23,12 +23,13 @@ Case WeCogno / DS Accelerator: estimar a probabilidade de inadimplência de cada
 |---|---|---|
 | ROC-AUC (LightGBM) | 0,699 | 0,694 (IC 95%: 0,682–0,707) |
 | F1 / recall no limiar de máximo F1 | 0,479 / 0,386 | 0,477 / 0,388 |
-| Baseline logístico (AUC) | 0,612 | 0,600 |
+| Baseline logístico, sem as variáveis de IV < 0,02 (AUC) | 0,612 | 0,600 |
 
 - **LightGBM × XGBoost:** empate estatístico (DeLong p = 0,44 e 0,89); ficou o LightGBM, mais rápido.
 - **Calibração:** o score bruto superestimava o risco (média 0,22 contra 17,5% observado); a isotônica corrige (Brier 0,118 no teste).
-- **Política:** na validação, 33% são aprovados direto (inadimplência 10,5%), 56% aprovados com ajuste (13,1%) e 11% rejeitados (62,9%). O recall de "não aprovar direto" é 80,0% na validação e 78,9% no teste, ao custo de cerca de 3,7 bons clientes barrados por inadimplente. A perda esperada cai 31% (validação) e 35% (teste), só pela rejeição.
-- **Submissão:** 29% aprovar, 51% ajuste e 20% rejeitar.
+- **DPD > 30:** pesos de classe não melhoraram o ranking e distorcem as probabilidades; o modelo segue sem peso.
+- **Política:** `p < p₁` aprova direto; `p₁ ≤ p < p₂` aprova com ajuste; `p ≥ p₂` rejeita. p₁ é o maior corte que barra pelo menos 80% dos inadimplentes (validação) e p₂ é o de máximo F1 acima de p₁. Na validação, 33% são aprovados direto (inadimplência 10,5%), 56% aprovados com ajuste (13,1%) e 11% rejeitados (62,9%). O recall de "não aprovar direto" é 80,0% na validação e 78,9% no teste, ao custo de cerca de 3,7 bons clientes barrados por inadimplente. A perda esperada cai 31% (validação) e 35% (teste), só pela rejeição.
+- **Submissão:** 29% aprovar, 51% ajuste e 20% rejeitar. `faixa_gestao` (A–E) é só visão de acompanhamento; a decisão vem de p₁ e p₂.
 
 ## Limitações
 - O poder preditivo é modesto (AUC 0,70). Só a faixa de rejeição se separa com segurança; as faixas A–D não se distinguem estatisticamente e servem só como visão de gestão.
@@ -45,7 +46,7 @@ cd notebooks
 jupyter nbconvert --to notebook --execute --inplace 01_qualidade_eda.ipynb 02_target_features.ipynb 03_modelagem_lgbm_xgb.ipynb 04_avaliacao_politica.ipynb
 cd .. && python -m pytest tests
 ```
-Execute na ordem. O nb02 grava as bases em `data/` (ignorada pelo git), o nb03 faz o tuning (≈ 35 min na primeira vez; reaproveita `data/modelos/*.json` depois) e o nb04 grava `submissao/previsoes.csv`. Python 3.12, versões fixadas em `requirements.txt`; seed 42.
+Execute na ordem. O nb02 grava as bases em `data/` (ignorada pelo git), o nb03 faz o tuning (≈ 35 min na primeira vez; reaproveita `data/modelos/*.json` depois) e o nb04 grava `submissao/previsoes.csv` e `models/modelo_final.joblib`. Python 3.12, versões fixadas em `requirements.txt`; seed 42.
 
 ## Usar o modelo final
 ```python
@@ -63,7 +64,7 @@ As variáveis do conjunto A são calculadas por `features.base_submissao`. O arq
 dados/            entrada
 notebooks/        01 qualidade e EDA · 02 target e features · 03 modelagem · 04 avaliação e política
 src/              config, data_loader, features, train, evaluate, policy
-tests/            target, features, categorias novas, cortes da política, previsões
+tests/            target, features, categorias novas, estatísticas (`evaluate`), cortes da política, calibrador, previsões e modelo final
 models/           modelo final (gerado pelo nb04)
 outputs/          figuras e tabelas dos notebooks
 docs/             PLANO, DECISOES, METRICAS
