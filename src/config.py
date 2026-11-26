@@ -19,4 +19,5 @@ DATA_OBSERVACAO = "2025-02-22"  # máx. data_real_pagamento e vencimento em hist
 # separação fora do tempo, pela data de decisão do contrato (proposta a validar no nb02)
 DATA_CORTE_TREINO = "2022-12-31"   # treino: decisões até esta data
 DATA_CORTE_VALID = "2023-12-31"    # validação: até esta data; teste: depois
+MODELOS = RAIZ / "models"           # modelo final (nb04)
 GERADOS = RAIZ / "data"            # bases geradas (ignorado pelo git; reproduz-se pelo nb02)

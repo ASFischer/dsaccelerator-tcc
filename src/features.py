@@ -61,6 +61,9 @@ FEATURES = {  # candidatos do nb03 (docs/DECISOES.md, item 1.10)
     "B": CONTRATO_SEM_VALOR + CADASTRO + ["pct_" + c for c in VALORES],
     "C": CONTRATO_SEM_VALOR + CADASTRO + VALORES,
 }
+# IV < 0,02 (nb02): ficam fora só do baseline logístico; `sexo` fica por decisão do usuário (docs/DECISOES.md, 2.8)
+SEM_PODER_IV = ["renda_anual", "tipo_moradia", "nivel_educacao", "estado_civil", "dia_semana_solicitacao",
+                "possui_imovel", "hora", "tipo_contrato", "possui_carro"]
 CATEGORICAS = ["tipo_contrato", "dia_semana_solicitacao", "sexo", "tipo_renda", "ocupacao", "tipo_organizacao",
                "nivel_educacao", "estado_civil", "tipo_moradia", "possui_carro", "possui_imovel"]
 
@@ -95,5 +98,6 @@ def base_submissao(sub: pd.DataFrame, cad: pd.DataFrame, obs: pd.Timestamp) -> p
 def separar_oot(data_decisao: pd.Series) -> pd.Series:
     """Rótulo 'treino' / 'valid' / 'teste' pela data de decisão (cortes no config)."""
     from config import DATA_CORTE_TREINO, DATA_CORTE_VALID
+    assert data_decisao.notna().all(), "data_decisao nula: o contrato cairia no teste sem aviso"
     return pd.Series(np.select([data_decisao <= DATA_CORTE_TREINO, data_decisao <= DATA_CORTE_VALID],
                                ["treino", "valid"], "teste"), index=data_decisao.index)

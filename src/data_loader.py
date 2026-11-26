@@ -51,7 +51,7 @@ def carregar_cadastral() -> pd.DataFrame:
     # 'R$ 112.500,00', '135000,00' e '90.000,00' -> float; 'não informado' -> NaN
     renda = pd.to_numeric(df["renda_anual"].str.replace(r"[R$\s.]", "", regex=True)
                           .str.replace(",", ".", regex=False), errors="coerce")
-    df["renda_anual"] = renda.mask(renda < 0)  # renda negativa é impossível: NaN (decisão a confirmar)
+    df["renda_anual"] = renda.mask(renda < 0)  # renda negativa é impossível: NaN (confirmado)
     return df.reset_index(drop=True)
 
 

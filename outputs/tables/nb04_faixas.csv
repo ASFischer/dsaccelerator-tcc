@@ -1,0 +1,11 @@
+split,f,n,inad,taxa,ic_inf,ic_sup,decisao,sobrepoe_proxima
+valid,A,3721,366,0.0984,0.0892,0.1083,aprovar,True
+valid,B,3721,417,0.1121,0.1023,0.1226,aprovar,True
+valid,C,6205,731,0.1178,0.11,0.1261,aprovar com ajuste,False
+valid,D,6205,889,0.1433,0.1348,0.1522,aprovar com ajuste,False
+valid,E,2403,1512,0.6292,0.6097,0.6483,rejeitar,False
+teste,A,2502,259,0.1035,0.0922,0.1161,aprovar,True
+teste,B,2271,259,0.114,0.1016,0.1278,aprovar,True
+teste,C,3898,459,0.1178,0.108,0.1282,aprovar com ajuste,True
+teste,D,3815,522,0.1368,0.1263,0.1481,aprovar com ajuste,False
+teste,E,1540,952,0.6182,0.5937,0.6421,rejeitar,False

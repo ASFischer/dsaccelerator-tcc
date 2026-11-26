@@ -1,0 +1,5 @@
+,,n,taxa real,AUC,aprovação direta,recall (não aprovar direto),rejeição
+valid,cliente já visto,14133.0,0.1535,0.7131,0.3581,0.7995,0.1034
+valid,cliente novo,8122.0,0.2148,0.6738,0.2932,0.8006,0.1159
+teste,cliente já visto,7842.0,0.1438,0.7491,0.3548,0.8236,0.115
+teste,cliente novo,6184.0,0.2139,0.6396,0.322,0.7589,0.1032

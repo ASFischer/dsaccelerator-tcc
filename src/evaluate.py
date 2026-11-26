@@ -1,6 +1,8 @@
 """Métricas e diagnósticos de avaliação (cresce nas etapas seguintes)."""
 import numpy as np
 import pandas as pd
+from scipy.stats import norm, rankdata
+from sklearn.metrics import average_precision_score, brier_score_loss, precision_recall_curve, roc_auc_score, roc_curve
 
 
 def psi(esperado, atual, bins: int = 10, eps: float = 1e-4) -> float:
@@ -32,3 +34,53 @@ def iv_woe(x, y, bins: int = 10):
     d = (g + 0.5) / (g + 0.5).sum()
     woe = np.log(d[0] / d[1])
     return float(((d[0] - d[1]) * woe).sum()), pd.DataFrame({"n": g.sum(axis=1), "taxa_inad": g[1] / g.sum(axis=1), "woe": woe})
+
+
+# --- métricas, limiar e comparação de modelos -----------------------------------------------
+def limiar_max_f1(y, p) -> float:
+    """Limiar que maximiza o F1 da classe positiva (escolhido na validação, nunca no teste)."""
+    prec, rec, thr = precision_recall_curve(y, p)
+    f1 = 2 * prec[:-1] * rec[:-1] / np.clip(prec[:-1] + rec[:-1], 1e-12, None)
+    return float(thr[np.nanargmax(f1)])
+
+
+def metricas(y, p, limiar: float) -> dict:
+    """Recall/F1 (principais), precision e F2 no `limiar`; auxiliares: ROC-AUC, Gini, KS, PR-AUC e Brier."""
+    y, p = np.asarray(y).astype(int), np.asarray(p)
+    pred = p >= limiar
+    tp, fp, fn = (pred & (y == 1)).sum(), (pred & (y == 0)).sum(), ((~pred) & (y == 1)).sum()
+    prec, rec = tp / max(tp + fp, 1), tp / max(tp + fn, 1)
+    f = lambda b: (1 + b * b) * prec * rec / max(b * b * prec + rec, 1e-12)
+    auc = roc_auc_score(y, p)
+    fpr, tpr, _ = roc_curve(y, p)
+    return dict(recall=rec, precision=prec, f1=f(1), f2=f(2), auc=auc, gini=2 * auc - 1, ks=float((tpr - fpr).max()),
+                pr_auc=average_precision_score(y, p), brier=brier_score_loss(y, np.clip(p, 0, 1)), taxa_aprovacao=1 - pred.mean())
+
+
+def delong(y, p1, p2):
+    """Teste de DeLong pareado para a diferença de AUC: (auc1, auc2, z, p-valor bilateral)."""
+    y = np.asarray(y).astype(int)
+    pos = y == 1
+    m, n = pos.sum(), (~pos).sum()
+    P = np.vstack([p1, p2])
+    X, Y = P[:, pos], P[:, ~pos]
+    tx = np.vstack([rankdata(r) for r in X])
+    ty = np.vstack([rankdata(r) for r in Y])
+    tz = np.vstack([rankdata(np.concatenate([a, b])) for a, b in zip(X, Y)])
+    aucs = tz[:, :m].sum(axis=1) / m / n - (m + 1) / 2 / n
+    s = np.cov((tz[:, :m] - tx) / n) / m + np.cov(1 - (tz[:, m:] - ty) / m) / n
+    var = s[0, 0] + s[1, 1] - 2 * s[0, 1]
+    z = (aucs[0] - aucs[1]) / np.sqrt(var) if var > 0 else 0.0  # scores idênticos: sem diferença
+    return float(aucs[0]), float(aucs[1]), float(z), float(2 * norm.sf(abs(z)))
+
+
+def bootstrap_pareado(y, p1, p2, lim1, lim2, n_boot: int = 1000, seed: int = 42) -> pd.DataFrame:
+    """IC 95% da diferença (modelo 2 − modelo 1) em AUC, recall e F1, com a mesma reamostragem para os dois."""
+    y, p1, p2 = np.asarray(y).astype(int), np.asarray(p1), np.asarray(p2)
+    rng, out = np.random.default_rng(seed), []
+    for _ in range(n_boot):
+        i = rng.integers(0, len(y), len(y))
+        a, b = metricas(y[i], p1[i], lim1), metricas(y[i], p2[i], lim2)
+        out.append({k: b[k] - a[k] for k in ("auc", "recall", "f1")})
+    d = pd.DataFrame(out)
+    return pd.DataFrame({"delta_medio": d.mean(), "ic95_inf": d.quantile(.025), "ic95_sup": d.quantile(.975)})

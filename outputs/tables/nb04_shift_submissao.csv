@@ -1,0 +1,19 @@
+,PSI,Δ SHAP médio (log-odds)
+renda_anual,0.0047,0.0451
+tipo_organizacao,0.0108,0.0346
+ocupacao,0.009,0.0229
+tipo_renda,0.006,0.0227
+nota_regiao_cliente,0.0007,0.0177
+nota_regiao_cliente_cidade,0.0005,0.0148
+idade,0.0101,0.0121
+qtd_membros_familia,0.0019,0.0118
+estado_civil,0.002,0.0064
+qtd_filhos,0.0014,0.0049
+dia_semana_solicitacao,0.0395,0.0029
+tipo_moradia,0.0013,0.0025
+possui_imovel,0.013,0.0022
+nivel_educacao,0.0064,0.0021
+sexo,0.0014,0.0016
+hora,0.0213,0.0012
+tipo_contrato,0.001,-0.0008
+possui_carro,0.0022,-0.0007

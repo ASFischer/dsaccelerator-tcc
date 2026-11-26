@@ -6,7 +6,6 @@ ENV/
 
 # artefatos gerados (reproduzidos pelos comandos do README; dados/ é versionado)
 data/
-models/
 
 # caches
 __pycache__/
