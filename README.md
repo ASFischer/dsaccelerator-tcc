@@ -11,6 +11,7 @@ Case WeCogno / DS Accelerator (enunciado em `README - Modelo de inadimplência.p
 | Previsões da submissão | `submissao/previsoes.csv` (`id_cliente`, `probabilidade`, `decisao`, `faixa_gestao`; 1 linha por cliente) |
 | Decisões e alternativas | `docs/DECISOES.md` (o `docs/PLANO.md` é o plano original; onde divergem, vale o `DECISOES.md`) |
 | Medidas estatísticas explicadas | `docs/METRICAS.md` |
+| Modelo em uso (API, app, Docker) | `api/`, `app/`, `src/scoring.py`; explicação leiga em `docs/PASSO_A_PASSO.md` |
 
 ## Problema e dados
 - Bases em `dados/`: cadastro (1 linha por cliente), histórico de empréstimos (1 por contrato), histórico de parcelas (1 por pagamento) e a base de submissão (contrato mais recente de cada cliente, sem target).
@@ -48,25 +49,53 @@ cd .. && python -m pytest tests
 ```
 Execute na ordem. O nb02 grava as bases em `data/` (ignorada pelo git), o nb03 faz o tuning (≈ 35 min na primeira vez; reaproveita `data/modelos/*.json` depois) e o nb04 grava `submissao/previsoes.csv` e `models/modelo_final.joblib`. Python 3.12, versões fixadas em `requirements.txt`; seed 42.
 
-## Usar o modelo final
-```python
-import sys, joblib; sys.path.insert(0, "src")   # o calibrador é da classe policy.Calibrador
-import train as tr, policy as po
-a = joblib.load("models/modelo_final.joblib")
-X = tr.preparar(novos_clientes, a["features"], a["categorias"])   # mesmas colunas de features.FEATURES["A"]
-prob = a["calibrador"](a["modelo"].predict_proba(X)[:, 1])
-decisao = po.faixa(prob, a["cortes_faixas"]).map(po.DECISAO)      # aprovar / aprovar com ajuste / rejeitar
+## Usar o modelo
+Explicação leiga de ponta a ponta, com comandos e erros comuns: `docs/PASSO_A_PASSO.md`.
+
 ```
-As variáveis do conjunto A são calculadas por `features.base_submissao`. O arquivo é um *pickle*: carregue apenas arquivos gerados por você, e use as versões de `requirements.txt` (as usadas ficam em `a["versoes"]`).
+dados/ ──► notebooks 01–04 ──► models/modelo_final.joblib ──► src/scoring.py ──┬─► API  (api/main.py, porta 8000)
+                                                                                └─► app  (app/streamlit_app.py, porta 8501)
+```
+
+**Em Python** (`src/scoring.py`, o mesmo núcleo da API e do app):
+```python
+import sys; sys.path.insert(0, "src")
+import scoring
+tabela, avisos = scoring.pontuar(novos_clientes)   # probabilidade, score_bruto, no_degrau_p1, decisao, faixa_gestao
+contribuicoes = scoring.explicar(novos_clientes)   # SHAP: 6 maiores, em log-odds do score bruto
+```
+`novos_clientes` tem as colunas de `features.FEATURES["A"]`, calculadas por `features.base_submissao`. Categoria fora do treino vira nulo e aparece em `avisos`. O modelo é um *pickle*: carregue apenas arquivos gerados por você e use as versões de `requirements.txt` (as usadas ficam em `versoes`).
+
+**API** (`uvicorn api.main:app --port 8000`; documentação interativa em http://localhost:8000/docs):
+| Endpoint | O que faz |
+|---|---|
+| `GET /saude` | algoritmo, calibração, versões das bibliotecas, data do modelo, p₁, p₂, métricas |
+| `POST /score?explicar=false` | lista de 1 a 1.000 clientes → `probabilidade`, `score_bruto`, `no_degrau_p1`, `decisao`, `faixa_gestao` (+ `contribuicoes` com `explicar=true`) e `avisos`. Tipo ou nome de campo errado → 422 |
+
+```powershell
+$c = '[{"tipo_contrato":"Financiamento de consumo","sexo":"Feminino","idade":31,"renda_anual":90000}]'
+Invoke-RestMethod -Method Post -Uri "http://localhost:8000/score?explicar=true" -ContentType "application/json; charset=utf-8" -Body ([Text.Encoding]::UTF8.GetBytes($c))
+```
+Campo ausente é tratado como valor faltante.
+
+**App** (`streamlit run app/streamlit_app.py`; http://localhost:8501), em 3 abas:
+1. **Pontuar cliente:** carrega um cliente da submissão, permite editar os campos e mostra a probabilidade, a decisão, o aviso de degrau e as contribuições SHAP.
+2. **Simular política:** sliders de p₁ e p₂ sobre a validação de 2023, com aprovação, inadimplência, recall e perda esperada comparados com os cortes do modelo.
+3. **Submissão e monitoramento:** decisões por base, PSI por variável e as figuras de calibração e SHAP.
+
+**Docker** (Docker Desktop aberto): `docker compose up --build` sobe a API e o app; `docker compose down` derruba os dois.
 
 ## Estrutura
 ```
 dados/            entrada
 notebooks/        01 qualidade e EDA · 02 target e features · 03 modelagem · 04 avaliação e política
-src/              config, data_loader, features, train, evaluate, policy
-tests/            target, features, categorias novas, estatísticas (`evaluate`), cortes da política, calibrador, previsões e modelo final
+src/              config, data_loader, features, train, evaluate, policy, scoring
+api/              API de score (FastAPI)
+app/              app de demonstração (Streamlit)
+tests/            target, features, categorias novas, estatísticas (`evaluate`), cortes da política, calibrador, previsões, modelo final e API
 models/           modelo final (gerado pelo nb04)
-outputs/          figuras e tabelas dos notebooks
-docs/             PLANO, DECISOES, METRICAS
+outputs/          figuras e tabelas dos notebooks (inclui os scores da validação usados pelo app)
+docs/             PLANO, DECISOES, METRICAS, PASSO_A_PASSO
 submissao/        previsoes.csv
+Dockerfile, docker-compose.yml   imagem única com os serviços api e app
 ```

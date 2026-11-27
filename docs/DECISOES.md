@@ -85,6 +85,22 @@ Referência: AUC ≈ 0,70 (A: 0,699/0,694); logística ≈ 0,61. Poder preditivo
 | 5.2 | `openpyxl` fica em `requirements.txt` | Remover | O nb01 lê o dicionário de dados em Excel com `pandas.read_excel` | Sim |
 | 5.3 | Testes: target, features, categorias novas, cortes e faixas, calibrador, estatísticas (`evaluate`), data de decisão, previsões e modelo final | Só testar nos notebooks | Os cálculos que decidem modelo e cortes quebram sem aviso; 14 testes | Sim |
 
+## Etapa 6 — Modelo em uso: API, app e Docker (`src/scoring.py`, `api/`, `app/`)
+
+| # | Decisão | Alternativas consideradas | Por que esta | Validada |
+|---|---|---|---|---|
+| 6.1 | Um só núcleo `src/scoring.py` (`pontuar`, `explicar`), usado pela API, pelo app e pelos testes | Repetir o trecho do README em cada lugar | A regra de pontuação fica num lugar só; o teste compara com `previsoes.csv` (50.000 clientes, idêntico) | Sim |
+| 6.2 | API em **FastAPI** | Flask | Valida a entrada pelo tipo (Pydantic) e gera a página `/docs` sozinha, que serve de demonstração na banca | Sim |
+| 6.3 | Entrada com os 18 campos tipados e opcionais; `extra="forbid"`; de 1 a 1.000 clientes por chamada | Aceitar qualquer JSON | Tipo errado ou campo com nome errado dá erro 422 em vez de virar nulo sem aviso; o limite evita uma chamada gigante travar o serviço | Sim (`tests/test_api.py`) |
+| 6.4 | Devolver `score_bruto` e `no_degrau_p1` (probabilidade a menos de 1e-4 de p₁) | Só documentar o degrau | 38% da submissão está no degrau da isotônica em ≈ p₁, onde só o desempate de 1e-6 separa aprovar de ajuste (4.1/4.4). Quem consome o score precisa saber | Sim |
+| 6.5 | SHAP só com `?explicar=true` | Explicar sempre | O SHAP custa mais que o score; um sistema de crédito pontua em lote e só explica quando precisa | Sim |
+| 6.6 | Categoria fora do treino vira nulo e aparece em `avisos` na resposta | Recusar a chamada (422) | É o mesmo comportamento do nb04 (ex.: `tipo_renda = 'Empresário'`); recusar travaria clientes reais | Sim |
+| 6.7 | App em **Streamlit**, chamando `scoring` direto | Dash, página HTML; app chamando a API | Streamlit faz formulário, sliders e gráficos em Python puro; chamar direto permite usar o app sem a API no ar (a API fica para sistemas) | Sim |
+| 6.8 | Scores da validação gravados pelo nb04 em `outputs/tables/nb04_scores_validacao.parquet` (< 1 MB) | Reconstruir a partir de `data/` | `data/` não vai para o git nem para o Docker; o app recalcula a política ao vivo com esse arquivo. O nb04 foi reexecutado e o modelo e `previsoes.csv` ficaram idênticos (hash) | Sim |
+| 6.9 | Docker: uma imagem, dois serviços no `docker-compose.yml` | Uma imagem por serviço | API e app usam o mesmo código e o mesmo modelo; uma imagem só é construída uma vez | Sim |
+| 6.10 | Fora do escopo: deploy público, autenticação, banco de dados de requisições, re-treino automático | — | Pedido do usuário: tudo roda local | Sim |
+| 6.11 | Tutorial leigo de ponta a ponta em `docs/PASSO_A_PASSO.md`, versionado | Arquivo na raiz e fora do git | Decisão do usuário: um arquivo só, que a banca também pode ler | Sim |
+
 ## Limitações conhecidas
 - **Clientes repetidos entre treino e teste:** 17.271 dos 43.338 clientes da base de modelagem aparecem em mais de um período (inevitável na separação por data). No teste, o AUC é 0,749 para clientes já vistos no treino e 0,640 para novos; para a submissão, 64,7% dos clientes já foram vistos. O modelo usa só variáveis de cadastro, então pode reconhecer o cliente. Por isso o desempenho para clientes novos (AUC ≈ 0,64, recall de "não aprovar direto" ≈ 76% no teste) é o mais conservador (`outputs/tables/nb04_clientes_vistos_novos.csv`).
 - Viés de seleção: só contratos aprovados têm desfecho. Reject inference fora do escopo.

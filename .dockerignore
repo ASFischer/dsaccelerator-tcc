@@ -1,0 +1,10 @@
+venv/
+.venv/
+data/
+notebooks/
+.git/
+.claude/
+**/__pycache__/
+.pytest_cache/
+*.pdf
+*.xlsx

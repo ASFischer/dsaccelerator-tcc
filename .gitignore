@@ -15,3 +15,6 @@ __pycache__/
 
 # lock files do Office
 ~$*
+
+# material pessoal (planos; fora do repositório)
+.claude/
